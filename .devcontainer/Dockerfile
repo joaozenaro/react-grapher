@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache --update sudo bash nodejs npm
+RUN apk add --no-cache --update sudo bash git nodejs npm
 
 RUN addgroup -g 1337 vscode && \
     adduser -D -s /bin/bash -G vscode -u 1337 vscode && \

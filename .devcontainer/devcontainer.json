@@ -9,7 +9,8 @@
         },
         "vscode": {
             "extensions": [
-                "bradlc.vscode-tailwindcss"
+                "bradlc.vscode-tailwindcss",
+                "dbaeumer.vscode-eslint"
             ]
         }
     },
