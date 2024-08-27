@@ -1,0 +1,17 @@
+{
+    "name": "TS Vite",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "settings": {
+            "terminal.integrated.defaultProfile.linux": "bash"
+        },
+        "vscode": {
+            "extensions": [
+                "bradlc.vscode-tailwindcss"
+            ]
+        }
+    },
+    "remoteUser": "vscode"
+}
