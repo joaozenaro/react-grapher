@@ -11,8 +11,8 @@ import ShapesList from './components/ShapesList';
 export default function CanvasDrawingApp() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [objectManager] = useState(new ObjectManager());
-    const [, setRefreshTrigger] = useState({});
-    const [currentShape, setCurrentShape] = useState({
+    const [shapes, setShapes] = useState<Shape[]>(objectManager.shapes);
+    const [currentShape, setCurrentShape] = useState<EditorShape>({
         type: '',
         x: 0,
         y: 0,
@@ -22,7 +22,8 @@ export default function CanvasDrawingApp() {
         endX: 100,
         endY: 100,
         color: '#000000',
-    } as EditorShape);
+    });
+    const [selectedShapeId, setSelectedShapeId] = useState<number | null>(null);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -32,7 +33,7 @@ export default function CanvasDrawingApp() {
         if (!ctx) return;
 
         objectManager.drawAll(ctx);
-    }, [objectManager, objectManager.shapes]);
+    }, [objectManager, shapes]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -46,37 +47,90 @@ export default function CanvasDrawingApp() {
         setCurrentShape((prev) => ({ ...prev, type: value }));
     };
 
-    const handleAddShape = () => {
-        let newShape: Shape;
-        const { type, x, y, width, height, radius, endX, endY, color } =
-            currentShape;
+    const handleAddOrUpdateShape = () => {
+        if (selectedShapeId !== null) {
+            // Update the selected shape
+            const updatedShape = objectManager.shapes.find(
+                (shape) => shape.id === selectedShapeId
+            );
+            if (updatedShape) {
+                updatedShape.x = currentShape.x;
+                updatedShape.y = currentShape.y;
+                updatedShape.color = currentShape.color;
+                if (updatedShape instanceof Rectangle) {
+                    updatedShape.width = currentShape.width;
+                    updatedShape.height = currentShape.height;
+                } else if (updatedShape instanceof Circle) {
+                    updatedShape.radius = currentShape.radius;
+                } else if (updatedShape instanceof Line) {
+                    updatedShape.endX = currentShape.endX;
+                    updatedShape.endY = currentShape.endY;
+                }
+            }
+        } else {
+            // Add a new shape
+            let newShape: Shape;
+            const { type, x, y, width, height, radius, endX, endY, color } =
+                currentShape;
 
-        switch (type) {
-            case 'rectangle':
-                newShape = new Rectangle(x, y, width, height, color);
-                break;
-            case 'circle':
-                newShape = new Circle(x, y, radius, color);
-                break;
-            case 'line':
-                newShape = new Line(x, y, endX, endY, color);
-                break;
-            default:
-                return;
+            switch (type) {
+                case 'rectangle':
+                    newShape = new Rectangle(x, y, width, height, color);
+                    break;
+                case 'circle':
+                    newShape = new Circle(x, y, radius, color);
+                    break;
+                case 'line':
+                    newShape = new Line(x, y, endX, endY, color);
+                    break;
+                default:
+                    return;
+            }
+
+            objectManager.addShape(newShape);
         }
 
-        objectManager.addShape(newShape);
-        setRefreshTrigger({});
+        setShapes([...objectManager.shapes]);
+        setSelectedShapeId(null);
+        setCurrentShape({
+            type: '',
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 100,
+            radius: 50,
+            endX: 100,
+            endY: 100,
+            color: '#000000',
+        });
     };
 
     const handleMoveShape = (id: number, direction: 'up' | 'down') => {
         objectManager.moveShape(id, direction);
-        setRefreshTrigger({});
+        setShapes([...objectManager.shapes]);
     };
 
     const handleDeleteShape = (id: number) => {
         objectManager.removeShape(id);
-        setRefreshTrigger({});
+        setShapes([...objectManager.shapes]);
+    };
+
+    const handleSelectShape = (id: number) => {
+        const shape = objectManager.shapes.find((shape) => shape.id === id);
+        if (shape) {
+            setSelectedShapeId(id);
+            setCurrentShape({
+                type: shape.constructor.name.toLowerCase(),
+                x: shape.x,
+                y: shape.y,
+                width: shape instanceof Rectangle ? shape.width : 100,
+                height: shape instanceof Rectangle ? shape.height : 100,
+                radius: shape instanceof Circle ? shape.radius : 50,
+                endX: shape instanceof Line ? shape.endX : 100,
+                endY: shape instanceof Line ? shape.endY : 100,
+                color: shape.color,
+            });
+        }
     };
 
     return (
@@ -92,12 +146,14 @@ export default function CanvasDrawingApp() {
                     />
                 </div>
                 <div>
-                    <h2 className="text-xl font-semibold mb-2">Add Shape</h2>
+                    <h2 className="text-xl font-semibold mb-2">
+                        Add / Edit Shape
+                    </h2>
                     <AddShape
                         currentShape={currentShape}
                         handleInputChange={handleInputChange}
                         handleSelectChange={handleSelectChange}
-                        handleAddShape={handleAddShape}
+                        handleAddShape={handleAddOrUpdateShape}
                     />
                 </div>
             </div>
@@ -107,6 +163,7 @@ export default function CanvasDrawingApp() {
                     objectManager={objectManager}
                     handleMoveShape={handleMoveShape}
                     handleDeleteShape={handleDeleteShape}
+                    handleSelectShape={handleSelectShape}
                 />
             </div>
         </div>

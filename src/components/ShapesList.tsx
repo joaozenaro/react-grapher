@@ -4,12 +4,14 @@ type ShapesListProps = {
     objectManager: ObjectManager;
     handleMoveShape: (id: number, direction: 'up' | 'down') => void;
     handleDeleteShape: (id: number) => void;
+    handleSelectShape: (id: number) => void;
 };
 
 export default function ShapesList({
     objectManager,
     handleMoveShape,
     handleDeleteShape,
+    handleSelectShape,
 }: ShapesListProps) {
     return (
         <table className="table">
@@ -21,8 +23,11 @@ export default function ShapesList({
                 </tr>
             </thead>
             <tbody>
-                {objectManager.shapes.map((shape, index) => (
-                    <tr key={shape.id}>
+                {objectManager.shapes.map((shape) => (
+                    <tr
+                        key={shape.id}
+                        onClick={() => handleSelectShape(shape.id)}
+                    >
                         <td>{shape.constructor.name}</td>
                         <td>
                             <div
@@ -33,26 +38,26 @@ export default function ShapesList({
                         <td>
                             <div className="space-x-2">
                                 <button
-                                    onClick={() =>
-                                        handleMoveShape(shape.id, 'up')
-                                    }
-                                    disabled={index === 0}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoveShape(shape.id, 'up');
+                                    }}
                                 >
                                     Up
                                 </button>
                                 <button
-                                    onClick={() =>
-                                        handleMoveShape(shape.id, 'down')
-                                    }
-                                    disabled={
-                                        index ===
-                                        objectManager.shapes.length - 1
-                                    }
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMoveShape(shape.id, 'down');
+                                    }}
                                 >
                                     Down
                                 </button>
                                 <button
-                                    onClick={() => handleDeleteShape(shape.id)}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteShape(shape.id);
+                                    }}
                                 >
                                     Delete
                                 </button>
