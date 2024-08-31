@@ -29,18 +29,18 @@ export class Rectangle extends Shape {
         this.vertices.forEach(({ x, y }) => ctx.lineTo(x, y));
         ctx.closePath();
 
-        if (this.styles.fillColor) {
-            ctx.fillStyle = this.styles.fillColor;
+        if (this.styles.hasFill) {
+            ctx.fillStyle = this.styles.fillColor ?? "#000000";
             ctx.fill();
         }
 
-        if (this.styles.borderColor) {
-            ctx.strokeStyle = this.styles.borderColor;
-        }
+        if (this.styles.hasBorder) {
+            ctx.strokeStyle = this.styles.borderColor ?? "#000000";
 
-        if (this.styles.borderWidth) {
-            ctx.lineWidth = this.styles.borderWidth;
-            ctx.stroke();
+            if (this.styles.borderWidth) {
+                ctx.lineWidth = this.styles.borderWidth;
+                ctx.stroke();
+            }
         }
     }
 }

@@ -31,7 +31,11 @@ export default function CanvasDrawingApp() {
                         ref={canvasRef}
                         className="border border-primary-content col-span-3 w-full h-full"
                     />
-                    <ShapeManager shapes={shapes} setShapes={setShapes} />
+                    <ShapeManager
+                        shapes={shapes}
+                        setShapes={setShapes}
+                        selectedShapeId={null}
+                    />
                 </section>
             </main>
         </>
