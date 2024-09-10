@@ -9,7 +9,7 @@ enum Tools {
     DrawShape,
 }
 
-const Canvas = () => {
+const Canvas = ({ background }: { background: string }) => {
     const {
         shapes,
         setShapes,
@@ -76,6 +76,13 @@ const Canvas = () => {
             }
         };
     }, [animate]);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        canvas.style.background = background;
+    }, [background]);
 
     const getCanvasCoordinates = useCallback(
         (e: React.MouseEvent<HTMLElement>): { x: number; y: number } => {
