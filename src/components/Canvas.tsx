@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useShapes } from '../context/useShapes';
 import { Shape, Vertex } from '../models/Shape';
 import { MousePointer2, Shapes, Waypoints } from 'lucide-react';
@@ -9,7 +9,13 @@ enum Tools {
     DrawShape,
 }
 
-const Canvas = ({ background }: { background: string }) => {
+const Canvas = ({
+    background,
+    setMousePos,
+}: {
+    background: string;
+    setMousePos: React.Dispatch<React.SetStateAction<Vertex | null>>;
+}) => {
     const {
         shapes,
         setShapes,
@@ -22,14 +28,21 @@ const Canvas = ({ background }: { background: string }) => {
         addVertex,
     } = useShapes();
 
-    const [mousePos, setMousePos] = useState<Vertex | null>({ x: 0, y: 0 });
     const [selectedTool, setSelectedTool] = useState<Tools>(Tools.Select);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const rafRef = useRef<number>();
 
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState<Vertex | null>(null);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [scale, setScale] = useState(1);
+
     const drawShapes = useCallback(
         (ctx: CanvasRenderingContext2D) => {
             ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            ctx.save();
+            ctx.translate(offset.x, offset.y);
+            ctx.scale(scale, scale);
 
             shapes.forEach((shape) => shape.draw(ctx));
 
@@ -41,8 +54,10 @@ const Canvas = ({ background }: { background: string }) => {
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
+
+            ctx.restore();
         },
-        [shapes, startPoint, currentPoint]
+        [shapes, startPoint, currentPoint, offset, scale]
     );
 
     const animate = useCallback(() => {
@@ -55,11 +70,13 @@ const Canvas = ({ background }: { background: string }) => {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
-        ctx.translate(canvas.width / 2, canvas.height / 2);
+        if (offset.x === 0 && offset.y === 0) {
+            setOffset({ x: ctx.canvas.width / 2, y: ctx.canvas.height / 2 });
+        }
 
         drawShapes(ctx);
         rafRef.current = requestAnimationFrame(animate);
-    }, [drawShapes]);
+    }, [drawShapes, offset.x, offset.y]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -89,11 +106,11 @@ const Canvas = ({ background }: { background: string }) => {
             const canvas = canvasRef.current!;
             const rect = canvas.getBoundingClientRect();
             return {
-                x: e.clientX - rect.left - canvas.width / 2,
-                y: e.clientY - rect.top - canvas.height / 2,
+                x: (e.clientX - rect.left - offset.x) / scale,
+                y: (e.clientY - rect.top - offset.y) / scale,
             };
         },
-        []
+        [offset, scale]
     );
 
     useEffect(() => {
@@ -121,7 +138,14 @@ const Canvas = ({ background }: { background: string }) => {
                 return;
             }
 
-            if (selectedTool === Tools.Select) return;
+            if (selectedTool === Tools.Select) {
+                setIsDragging(true);
+                setDragStart({
+                    x: e.clientX - offset.x,
+                    y: e.clientY - offset.y,
+                });
+                return;
+            }
 
             if (!startPoint) {
                 setStartPoint(coords);
@@ -150,16 +174,18 @@ const Canvas = ({ background }: { background: string }) => {
             }
         },
         [
+            getCanvasCoordinates,
             selectedTool,
             startPoint,
-            currentPoint,
-            selectedShape,
+            setStartPoint,
+            setCurrentPoint,
+            offset.x,
+            offset.y,
             setShapes,
             setSelectedShape,
             addVertex,
-            getCanvasCoordinates,
-            setStartPoint,
-            setCurrentPoint,
+            selectedShape,
+            currentPoint,
         ]
     );
 
@@ -169,13 +195,56 @@ const Canvas = ({ background }: { background: string }) => {
             if (startPoint) {
                 setCurrentPoint(getCanvasCoordinates(e));
             }
+
+            if (isDragging) {
+                const newOffset = {
+                    x: e.clientX - (dragStart?.x || 0),
+                    y: e.clientY - (dragStart?.y || 0),
+                };
+                setOffset(newOffset);
+            }
         },
-        [startPoint, getCanvasCoordinates, setCurrentPoint]
+        [
+            setMousePos,
+            getCanvasCoordinates,
+            startPoint,
+            isDragging,
+            setCurrentPoint,
+            dragStart?.x,
+            dragStart?.y,
+        ]
+    );
+
+    const handleCanvasMouseUp = useCallback(() => {
+        setIsDragging(false);
+        setDragStart(null);
+    }, []);
+
+    const handleWheel = useCallback(
+        (e: React.WheelEvent) => {
+            const scaleAmount = 0.1;
+            const direction = e.deltaY > 0 ? -1 : 1;
+            const newScale = scale + direction * scaleAmount * scale;
+
+            if (newScale < 0.1 || newScale > 5) return;
+
+            const rect = canvasRef.current!.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left - offset.x) / scale;
+            const mouseY = (e.clientY - rect.top - offset.y) / scale;
+
+            const newOffset = {
+                x: offset.x - mouseX * (newScale - scale),
+                y: offset.y - mouseY * (newScale - scale),
+            };
+
+            setOffset(newOffset);
+            setScale(newScale);
+        },
+        [scale, offset]
     );
 
     return (
         <div className="w-100 col-span-4 flex items-center">
-            <div className="absolute bottom-0 m-4">{`${mousePos?.x}x${mousePos?.y}`}</div>
             <div className="join join-vertical absolute ms-4">
                 <button
                     className={`btn join-item ${selectedTool === Tools.Select && 'btn-primary'}`}
@@ -201,6 +270,9 @@ const Canvas = ({ background }: { background: string }) => {
                 className="border border-primary-content w-full h-full"
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleCanvasMouseMove}
+                onMouseUp={handleCanvasMouseUp}
+                onMouseLeave={handleCanvasMouseUp}
+                onWheel={handleWheel}
             />
         </div>
     );

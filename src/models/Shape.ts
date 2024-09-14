@@ -15,7 +15,7 @@ export class Shape {
         public vertices: Vertex[],
         public styles: Styles,
         public editing: boolean = false,
-        public isClosed: boolean = true
+        public isClosed: boolean
     ) {
         this.id = id;
         this.vertices = vertices;

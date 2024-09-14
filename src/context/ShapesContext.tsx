@@ -18,7 +18,7 @@ const useShapesState = () => {
                 shape ??
                 new Shape(
                     nextShapeId,
-                    `Shape ${nextShapeId}`,
+                    `Shape`,
                     [
                         { x: -50, y: 50 },
                         { x: 50, y: 50 },
@@ -31,7 +31,9 @@ const useShapesState = () => {
                         hasBorder: false,
                         borderWidth: 0,
                         borderColor: '',
-                    }
+                    },
+                    false,
+                    true
                 );
             setShapes((prev) => [...prev, newShape]);
             setNextShapeId((prev) => prev + 1);
@@ -89,7 +91,8 @@ const useShapesState = () => {
                                   (_, i) => i !== vertexIndex
                               ),
                               shape.styles,
-                              shape.editing
+                              shape.editing,
+                              shape.isClosed
                           )
                         : shape
                 )
@@ -118,7 +121,8 @@ const useShapesState = () => {
                                       : v
                               ),
                               shape.styles,
-                              shape.editing
+                              shape.editing,
+                              shape.isClosed
                           )
                         : shape
                 )
@@ -165,7 +169,8 @@ const useShapesState = () => {
                                               : 'hasBorder'
                                       ],
                               },
-                              shape.editing
+                              shape.editing,
+                              shape.isClosed
                           )
                         : shape
                 )
@@ -184,7 +189,8 @@ const useShapesState = () => {
                               shape.name,
                               shape.vertices,
                               shape.styles,
-                              !shape.editing
+                              !shape.editing,
+                              shape.isClosed
                           )
                         : shape
                 )

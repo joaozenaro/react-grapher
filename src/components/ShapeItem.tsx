@@ -1,7 +1,7 @@
 import { Check, ChevronDown, ChevronUp, Settings2, Trash } from 'lucide-react';
 import { Shape } from '../models/Shape';
 import { useShapes } from '../context/useShapes';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 
 const ShapeItem = ({
     shape,
@@ -24,6 +24,8 @@ const ShapeItem = ({
         moveShapeDown,
     } = useShapes();
 
+    const [isEditingName, setIsEditingName] = useState(false);
+
     const handleNameChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
             updateShape(shape.id, { name: e.target.value });
@@ -31,8 +33,13 @@ const ShapeItem = ({
         [shape.id, updateShape]
     );
 
+    const handleNameDoubleClick = useCallback(() => {
+        setIsEditingName(true);
+    }, []);
+
     const handleEditToggle = useCallback(() => {
         editShape(shape.id);
+        setIsEditingName(false);
     }, [shape.id, editShape]);
 
     const handleRemove = useCallback(() => {
@@ -73,6 +80,14 @@ const ShapeItem = ({
         [shape.id, removeVertex]
     );
 
+    const handleNameBlur = useCallback(() => {
+        setIsEditingName(false);
+    }, []);
+
+    const handleToggleIsClosed = useCallback(() => {
+        updateShape(shape.id, { isClosed: !shape.isClosed });
+    }, [shape.id, shape.isClosed, updateShape]);
+
     return (
         <tr
             className={`grid grid-cols-6 hover ${
@@ -81,12 +96,23 @@ const ShapeItem = ({
             onClick={onSelect}
         >
             <td className="col-span-6 join">
-                <input
-                    type="text"
-                    className="input input-ghost join-item w-full"
-                    value={shape.name}
-                    onChange={handleNameChange}
-                />
+                {!isEditingName ? (
+                    <span
+                        className="text-left cursor-pointer w-full join-item flex items-center"
+                        onDoubleClick={handleNameDoubleClick}
+                    >
+                        {shape.name}
+                    </span>
+                ) : (
+                    <input
+                        type="text"
+                        className="input input-ghost join-item w-full"
+                        value={shape.name}
+                        onChange={handleNameChange}
+                        onBlur={handleNameBlur}
+                        autoFocus
+                    />
+                )}
                 <button
                     className="btn btn-square join-item"
                     onClick={handleMoveUp}
@@ -131,6 +157,16 @@ const ShapeItem = ({
 
             {shape.editing && (
                 <td className="col-span-6">
+                    <label className="label cursor-pointer">
+                        <span className="label-text">Closed Shape</span>
+                        <input
+                            type="checkbox"
+                            checked={shape.isClosed}
+                            onChange={handleToggleIsClosed}
+                            className="checkbox"
+                        />
+                    </label>
+
                     <label className="label cursor-pointer">
                         <span className="label-text">Fill</span>
                         <input
